@@ -148,3 +148,30 @@ exports.deleteJob = async (req, res, next) => {
   }
 
 };
+exports.searchJobs = async (req, res, next) => {
+
+  try {
+
+    const searchQuery = req.query.q;
+
+    if (!searchQuery) {
+      return res.status(400).json({
+        message: "Search query is required"
+      });
+    }
+
+    const jobs = await Job.find({
+      $text: { $search: searchQuery }
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      query: searchQuery,
+      results: jobs.length,
+      jobs
+    });
+
+  } catch (error) {
+    next(error);
+  }
+
+};
