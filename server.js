@@ -6,17 +6,23 @@ const morgan = require("morgan");
 const connectDB = require("./config/db");
 const jobRoutes = require("./routes/jobRoutes");
 const errorHandler = require("./middleware/errorHandler");
+const skillGapRoutes = require("./routes/skillGapRoutes");
+const recommendationRoutes = require("./routes/recommendationRoutes");
+const userRoutes = require("./routes/userRoutes");
+const authRoutes =require("./routes/authRoutes");
 
 dotenv.config();
 
 const app = express();
 
 connectDB();
-
 app.use(cors());
 app.use(express.json());
-
+app.use("/api/recommendations", recommendationRoutes);
+app.use("/api/skill-gap", skillGapRoutes);
 app.use(morgan("dev"));
+app.use("/api/users", userRoutes);
+app.use("/api/auth",authRoutes);
 
 app.get("/", (req, res) => {
 res.send("CareerLens API Running");

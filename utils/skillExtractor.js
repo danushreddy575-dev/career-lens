@@ -1,6 +1,9 @@
+const normalizeSkill = require("./normalizeSkill");
+
 const skillsList = [
   "javascript",
   "node.js",
+  "nodejs",
   "react",
   "mongodb",
   "express",
@@ -12,18 +15,26 @@ const skillsList = [
   "java",
   "aws",
   "html",
-  "css"
+  "css",
+  "typescript",
+  "redis",
+  "graphql",
+  "next.js",
+  "nestjs",
+  "spring",
+  "spring boot",
+  "git",
+  "linux"
 ];
 
 const extractSkills = (text) => {
-
   const lowerText = text.toLowerCase();
 
-  const extracted = skillsList.filter(skill =>
-    lowerText.includes(skill)
-  );
+  const found = skillsList
+    .filter(skill => lowerText.includes(skill))
+    .map(normalizeSkill);
 
-  return extracted;
+  return [...new Set(found)];
 };
 
 module.exports = extractSkills;

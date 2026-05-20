@@ -6,6 +6,7 @@ const Job = require("../models/Job");
 const fetchJobs = require("./services/fetchJobs");
 const isSimilar = require("../utils/similarity");
 const extractSkills = require("../utils/skillExtractor");
+const normalizeSkill = require("../utils/normalizeSkill");
 
 const collectJobs = async () => {
 
@@ -20,19 +21,18 @@ const collectJobs = async () => {
     let savedCount = 0;
     let skippedCount = 0;
 
+    // 🔥 FIX: Fetch once (NOT inside loop)
+    const existingJobs = await Job.find({
+      company: "ExternalSource"
+    });
+
     for (const item of jobs) {
 
       console.log("Processing:", item.title);
 
-      // 🔍 Get existing jobs from same source
-      const existingJobs = await Job.find({
-        company: "ExternalSource"
-      });
-
       let isDuplicate = false;
 
       for (const existing of existingJobs) {
-
         if (isSimilar(existing.title, item.title)) {
           isDuplicate = true;
           break;
@@ -45,7 +45,7 @@ const collectJobs = async () => {
         continue;
       }
 
-      // 🧠 Extract skills from description
+      // 🧠 Extract + normalize skills
       const extractedSkills = extractSkills(item.body || "");
 
       const job = new Job({
@@ -53,7 +53,7 @@ const collectJobs = async () => {
         company: "ExternalSource",
         location: "Remote",
         description: item.body,
-        skills: extractedSkills,
+        skills: extractedSkills.map(normalizeSkill),
         source: "collector"
       });
 

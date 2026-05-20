@@ -1,3 +1,4 @@
+const recommendationEngine = require("../utils/recommendationEngine");
 const Job = require("../models/Job");
 
 
@@ -148,30 +149,104 @@ exports.deleteJob = async (req, res, next) => {
   }
 
 };
-exports.searchJobs = async (req, res, next) => {
-
+exports.searchJobs = async (req, res) => {
   try {
+    const {
+      q,
+      location,
+      skills,
+      page = 1,
+      limit = 10
+    } = req.query;
 
-    const searchQuery = req.query.q;
+    const query = {};
 
-    if (!searchQuery) {
-      return res.status(400).json({
-        message: "Search query is required"
-      });
+    if (q) {
+      query.$text = { $search: q };
     }
 
-    const jobs = await Job.find({
-      $text: { $search: searchQuery }
-    }).sort({ createdAt: -1 });
+    if (location) {
+      query.location = {
+        $regex: location,
+        $options: "i"
+      };
+    }
+
+    let jobs;
+
+    if (q) {
+      jobs = await Job.find(
+        query,
+        { score: { $meta: "textScore" } }
+      ).sort({
+        score: { $meta: "textScore" }
+      }).lean();
+    } else {
+      jobs = await Job.find(query);
+    }
+    const userSkills = skills
+      ? skills.split(",").map(skill => skill.trim())
+      : [];
+
+    let rankedJobs = jobs
+      .map(job => {
+        let recommendationScore = 0;
+        let matched = [];
+        let missing = [];
+
+        if (userSkills.length > 0) {
+          const recommendation = recommendationEngine(userSkills, job);
+
+          if (!recommendation) return null;
+
+          recommendationScore = recommendation.score;
+          matched = recommendation.matched;
+          missing = recommendation.missing;
+        }
+
+        const textScore = job.score || 0;
+
+        const finalScore = Math.round(
+          recommendationScore * 0.7 + textScore * 10 * 0.3
+        );
+
+        return {
+          jobId: job._id,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          skillsRequired: job.skills || [],
+          matched,
+          missing,
+          recommendationScore,
+          textScore,
+          finalScore
+        };
+      })
+      .filter(Boolean);
+
+    rankedJobs.sort((a, b) => b.finalScore - a.finalScore);
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+
+    const start = (pageNum - 1) * limitNum;
+    const end = start + limitNum;
+
+    const paginated = rankedJobs.slice(start, end);
 
     res.json({
-      query: searchQuery,
-      results: jobs.length,
-      jobs
+      total: rankedJobs.length,
+      page: pageNum,
+      limit: limitNum,
+      jobs: paginated
     });
 
   } catch (error) {
-    next(error);
-  }
+    console.error("Advanced search error:", error);
 
+    res.status(500).json({
+      message: "Failed to search jobs"
+    });
+  }
 };
