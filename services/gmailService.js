@@ -14,6 +14,69 @@ const oauth2Client = new google.auth.OAuth2(
 );
 const classifyEmail =
   require("../utils/emailClassifier");
+const {
+  extractOpportunityLink
+} = require("../utils/linkExtractor");
+
+const decodeBodyData = (data = "") => {
+  if (!data) return "";
+
+  const normalized = data
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+
+  return Buffer
+    .from(normalized, "base64")
+    .toString("utf8");
+};
+
+const stripHtml = (html = "") => {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const collectBodyText = (part, bodies) => {
+  if (!part) return;
+
+  const bodyText =
+    decodeBodyData(part.body?.data);
+
+  if (
+    bodyText &&
+    part.mimeType === "text/plain"
+  ) {
+    bodies.plain.push(bodyText);
+  }
+
+  if (
+    bodyText &&
+    part.mimeType === "text/html"
+  ) {
+    bodies.html.push(stripHtml(bodyText));
+  }
+
+  (part.parts || []).forEach(
+    child => collectBodyText(child, bodies)
+  );
+};
+
+const getMessageBodyText = (payload) => {
+  const bodies = {
+    plain: [],
+    html: []
+  };
+
+  collectBodyText(payload, bodies);
+
+  return (
+    bodies.plain.join(" ") ||
+    bodies.html.join(" ")
+  );
+};
 
 const generateAuthUrl = () => {
   return oauth2Client.generateAuthUrl({
@@ -123,12 +186,28 @@ const fetchEmails = async (userId) => {
         h => h.name === "From"
       )?.value || "";
 
+    const bodyText =
+      getMessageBodyText(
+        message.data.payload
+      );
+
+    const emailText = [
+      subject,
+      from,
+      message.data.snippet,
+      bodyText
+    ].join(" ");
+
+    const opportunityLink =
+      extractOpportunityLink(emailText);
+
     const classified =
       classifyEmail({
         id: msg.id,
         subject,
         from,
-        snippet: message.data.snippet
+        snippet: message.data.snippet,
+        opportunityLink
       });
     
     await syncApplicationFromEmail(
@@ -152,7 +231,9 @@ const fetchEmails = async (userId) => {
         source: classified.source,
         organization: classified.organization,
         type: classified.type,
-        trust: classified.trust
+        trust: classified.trust,
+        opportunityLink:
+          classified.opportunityLink || null
       },
       {
         upsert: true,
