@@ -15,8 +15,11 @@ const oauth2Client = new google.auth.OAuth2(
 const classifyEmail =
   require("../utils/emailClassifier");
 const {
-  extractOpportunityLink
+  extractOpportunityLink,
+  extractHrefLinks
 } = require("../utils/linkExtractor");
+
+const RECENT_GMAIL_SYNC_LIMIT = 50;
 
 const decodeBodyData = (data = "") => {
   if (!data) return "";
@@ -57,6 +60,9 @@ const collectBodyText = (part, bodies) => {
     part.mimeType === "text/html"
   ) {
     bodies.html.push(stripHtml(bodyText));
+    bodies.hrefs.push(
+      ...extractHrefLinks(bodyText)
+    );
   }
 
   (part.parts || []).forEach(
@@ -67,15 +73,20 @@ const collectBodyText = (part, bodies) => {
 const getMessageBodyText = (payload) => {
   const bodies = {
     plain: [],
-    html: []
+    html: [],
+    hrefs: []
   };
 
   collectBodyText(payload, bodies);
 
-  return (
+  const visibleText =
     bodies.plain.join(" ") ||
-    bodies.html.join(" ")
-  );
+    bodies.html.join(" ");
+
+  return [
+    [...new Set(bodies.hrefs)].join(" "),
+    visibleText
+  ].join(" ");
 };
 
 const generateAuthUrl = () => {
@@ -157,7 +168,7 @@ const fetchEmails = async (userId) => {
   const messagesRes =
     await gmail.users.messages.list({
       userId: "me",
-      maxResults: 10
+      maxResults: RECENT_GMAIL_SYNC_LIMIT
     });
 
   const messages =

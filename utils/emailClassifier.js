@@ -1,3 +1,120 @@
+const HIGH_VALUE_TYPES = [
+  "OFFER",
+  "INTERVIEW",
+  "ASSESSMENT",
+  "APPLICATION",
+  "RECRUITER_RESPONSE"
+];
+
+const hasAny = (text, phrases) =>
+  phrases.some(
+    phrase => text.includes(phrase)
+  );
+
+const hasCombination = (
+  text,
+  left,
+  right
+) => (
+  hasAny(text, left) &&
+  hasAny(text, right)
+);
+
+const isAssessmentEmail = (text) => {
+  return hasAny(text, [
+    "coding assessment",
+    "technical assessment",
+    "online assessment",
+    "assessment invitation",
+    "complete your assessment",
+    "take the assessment",
+    "coding challenge",
+    "technical challenge",
+    "hackerrank",
+    "codility"
+  ]);
+};
+
+const isRecruiterResponseEmail = (text) => {
+  return (
+    text.includes("recruiter response") ||
+    hasCombination(
+      text,
+      [
+        "recruiter",
+        "talent acquisition",
+        "hiring team",
+        "hiring manager"
+      ],
+      [
+        "next steps",
+        "following up",
+        "shortlisted",
+        "selected",
+        "reply",
+        "response"
+      ]
+    )
+  );
+};
+
+const isLowRelevanceContent = (text) => {
+  const directPhrases = [
+    "resume building webinar",
+    "ats-friendly resume",
+    "career advice session",
+    "study abroad",
+    "assess your english",
+    "english proficiency test",
+    "weekly digest",
+    "career newsletter",
+    "join us live",
+    "register now",
+    "limited seats"
+  ];
+
+  const eventPhrases = [
+    "webinar",
+    "masterclass",
+    "workshop",
+    "bootcamp",
+    "live session"
+  ];
+
+  const eventSignals = [
+    "register",
+    "join us",
+    "reserve your spot",
+    "limited seats",
+    "free session"
+  ];
+
+  const newsletterPhrases = [
+    "newsletter",
+    "weekly digest",
+    "monthly digest"
+  ];
+
+  const genericCareerPhrases = [
+    "resume tips",
+    "resume guide",
+    "career advice",
+    "career tips",
+    "career content"
+  ];
+
+  return (
+    hasAny(text, directPhrases) ||
+    hasCombination(
+      text,
+      eventPhrases,
+      eventSignals
+    ) ||
+    hasAny(text, newsletterPhrases) ||
+    hasAny(text, genericCareerPhrases)
+  );
+};
+
 const classifyEmail = (email) => {
 
   const text = `
@@ -17,6 +134,18 @@ const classifyEmail = (email) => {
     text.includes("interview")
   ) {
     type = "INTERVIEW";
+  }
+
+  else if (
+    isAssessmentEmail(text)
+  ) {
+    type = "ASSESSMENT";
+  }
+
+  else if (
+    isRecruiterResponseEmail(text)
+  ) {
+    type = "RECRUITER_RESPONSE";
   }
 
   else if (
@@ -92,6 +221,14 @@ const classifyEmail = (email) => {
     source !== "OTHER"
   ) {
     trust = "🟢 Trusted";
+  }
+
+  if (
+    !HIGH_VALUE_TYPES.includes(type) &&
+    isLowRelevanceContent(text)
+  ) {
+    type = "OTHER";
+    trust = "ðŸ”´ Filtered";
   }
 
   const orgChecks = [
