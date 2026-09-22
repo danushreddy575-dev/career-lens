@@ -3,10 +3,15 @@ const EmailConnection =
 
 const gmailService =
   require("./gmailService");
+const {
+  reconcileApplicationTimelines
+} = require("./applicationSyncService");
 
 const syncAllGmailAccounts =
   async () => {
 
+    // Scheduler syncs each connected account; gmailService validates
+    // the connection still matches that user's current inboxEmail.
     const connections =
       await EmailConnection.find({
         connected: true
@@ -25,6 +30,10 @@ const syncAllGmailAccounts =
         );
 
         await gmailService.fetchEmails(
+          connection.user
+        );
+
+        await reconcileApplicationTimelines(
           connection.user
         );
 

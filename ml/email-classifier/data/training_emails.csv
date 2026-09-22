@@ -1,0 +1,46 @@
+subject,from,snippet,bodyText,label
+"Interview invitation for frontend developer","hr@example.com","Your interview has been scheduled","Please join the technical interview tomorrow",INTERVIEW
+"Technical interview schedule","talent@example.com","We would like to schedule your interview","Your next round is with the engineering team",INTERVIEW
+"Application received","jobs@example.com","Thank you for applying","We received your application for software engineer",APPLICATION
+"Your application was submitted","careers@example.com","Application successfully submitted","Thanks for applying to our company",APPLICATION
+"Software developer opening","recruiter@example.com","We are hiring React developers","Apply for this job opportunity",JOB
+"Backend engineer job opportunity","hiring@example.com","Opening for Node.js developer","We are looking for a software engineer",JOB
+"Offer letter","hr@example.com","Pleased to offer you the role","Congratulations on your offer",OFFER
+"Congratulations you are selected","people@example.com","We would like to offer you this position","Please review the attached offer details",OFFER
+"We regret to inform you","careers@example.com","Your application was not selected","Thank you for your interest",REJECTION
+"Application update","noreply@example.com","We have decided not to move forward","We regret that you were not selected",REJECTION
+"Resume building webinar","events@example.com","Register now for our webinar","Join this free career session",WEBINAR
+"Free career masterclass","training@example.com","Reserve your seat today","Attend our live webinar on interview preparation",WEBINAR
+"Limited time course discount","promo@example.com","Special offer for students","Buy now and save on this course",PROMOTION
+"Exclusive discount offer","marketing@example.com","Limited time promotion","Use this coupon before it expires",PROMOTION
+"Weekly career newsletter","newsletter@example.com","This week's career tips","Read our latest articles and job search advice",NEWSLETTER
+"Monthly jobs digest","digest@example.com","Your career newsletter is here","Top articles and resources from this month",NEWSLETTER
+"Introducing MongoDB Atlas connectors and plugins for agents","MongoDB","Introducing MongoDB Atlas connectors and plugins for agents","Learn about MongoDB Atlas connectors plugins and integrations for building agents",NEWSLETTER
+"Product update: new database connectors","product@example.com","New connectors are now available","Explore new plugins connectors integrations and developer tools",NEWSLETTER
+"Introducing AI plugins for developers","newsletter@example.com","New plugin announcement","Read about new platform plugins connectors and product updates",NEWSLETTER
+"Update to Terms and Conditions","support@sliceit.com","Schedule of Charges updated","Dear user we are updating the terms and conditions and schedule of charges for your savings account",OTHER
+"Savings account service notice","alerts@bank.com","Important account update","Please review updated bank account documents and revised charges",OTHER
+"Credit card payment reminder","cards@bank.com","Your payment is due","Pay your credit card bill before the due date to avoid charges",OTHER
+"UPI transaction successful","no-reply@payments.com","Payment confirmation","Your UPI transaction was completed successfully",OTHER
+"Security alert for your account","security@example.com","New sign in detected","A new login was detected on your account please verify if this was you",OTHER
+"Password reset requested","accounts@example.com","Reset your password","Use this verification code to reset your password",OTHER
+"Google OAuth keys exposed on GitHub","google@example.com","Security warning","OAuth client secret was exposed in a public repository",OTHER
+"GitHub application added","noreply@github.com","A third party app was added","A third-party GitHub application has been added to your account",OTHER
+"Monthly statement available","statement@bank.com","Account statement ready","Your monthly savings account statement is ready to download",OTHER
+"Privacy policy update","support@app.com","We updated our privacy policy","Please read the updated privacy policy and terms of service",OTHER
+"Delivery update","orders@store.com","Your order has shipped","Track your package using the delivery link",OTHER
+"Subscription renewal notice","billing@service.com","Your subscription renews soon","Your plan will renew automatically next week",OTHER
+"Interview invite for software engineer","recruiter@company.com","Technical round scheduled","Your software engineer interview is scheduled for Friday",INTERVIEW
+"Online assessment invitation","campus@hiring.com","Complete your coding assessment","Please complete the assessment for the developer role",INTERVIEW
+"Hiring for React developer","talent@startup.com","React developer opening","We are hiring React developers for our product engineering team",JOB
+"Node.js backend engineer opening","careers@tech.com","Backend role available","Apply for Node.js MongoDB backend engineer job",JOB
+"Your application for frontend developer","jobs@company.com","Application confirmation","Thank you for applying for the frontend developer position",APPLICATION
+"Application status update","careers@company.com","We received your application","Your application for the software developer role is under review",APPLICATION
+"Offer for software developer role","hr@company.com","Congratulations on your offer","We are pleased to offer you the software developer position",OFFER
+"Selected for internship role","people@company.com","Offer details attached","You have been selected for the internship role please review offer details",OFFER
+"We will not move forward","recruiting@company.com","Application result","We regret to inform you that you were not selected for this role",REJECTION
+"Not selected for developer position","careers@company.com","Application update","Thank you for interviewing but we selected another candidate",REJECTION
+"Exclusive challenge: GE HealthCare Precision Care Challenge INR 3.25 Lakhs Pool","GE HealthCare","As one of our most active members we know you're always looking for high-impact opportunities","The GE HealthCare Precision Care Challenge 2026 is officially open and your experience makes you an ideal candidate to build a standout solution",COMPETITION
+"Hackathon registration open","Unstop","National coding challenge is live","Register for the hackathon and build a standout project for your resume",COMPETITION
+"Innovation challenge for students","HackerEarth","Prize pool and certificates available","Join this software challenge to solve real world problems and improve your profile",COMPETITION
+"Your MCA can do more than earn you a degree","SRM University","Choosing SRMIST MCA Degree is step one","When you enrol in the Online MCA degree program by SRMIST you also get access to Great Learning Academy PRO plus a premium career acceleration platform free exclusively for our learners",PROMOTION

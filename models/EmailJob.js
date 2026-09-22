@@ -32,6 +32,31 @@ const emailJobSchema = new mongoose.Schema(
       default: "OTHER"
     },
 
+    mlType: {
+      type: String,
+      default: null
+    },
+
+    mlConfidence: {
+      type: Number,
+      default: 0
+    },
+
+    classifierVersion: {
+      type: String,
+      default: null
+    },
+
+    classificationSource: {
+      type: String,
+      enum: [
+        "RULE",
+        "ML",
+        "ML_FALLBACK"
+      ],
+      default: "RULE"
+    },
+
     trust: {
       type: String,
       default: "🟡 Needs Review"
@@ -40,6 +65,31 @@ const emailJobSchema = new mongoose.Schema(
     opportunityLink: {
     type: String,
     default: null
+    },
+
+    opportunityScore: {
+    type: Number,
+    default: 0
+    },
+
+    priority: {
+    type: String,
+    default: "LOW"
+    },
+
+    recruiterEmail: {
+    type: String,
+    default: ""
+    },
+
+    recruiterName: {
+    type: String,
+    default: ""
+    },
+
+    interactionCount: {
+    type: Number,
+    default: 1
     }
   },
   {

@@ -1,5 +1,52 @@
 const recommendationEngine = require("../utils/recommendationEngine");
 const Job = require("../models/Job");
+const User = require("../models/User");
+const jwt = require("jsonwebtoken");
+const {
+  getVisibleJobQuery
+} = require("../utils/jobLifecycle");
+
+const getUserIdFromRequest = (req) => {
+  const authHeader =
+    req.headers.authorization || "";
+
+  if (!authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+
+  try {
+    return jwt.verify(
+      authHeader.split(" ")[1],
+      process.env.JWT_SECRET
+    ).id;
+  } catch (err) {
+    return null;
+  }
+};
+
+const escapeRegex = (value = "") =>
+  String(value).replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&"
+  );
+
+const parseLocationParts = (location = "") => {
+  const parts =
+    String(location || "")
+      .toLowerCase()
+      .split(/[,\n;/|]+/)
+      .map(part => part.trim())
+      .filter(Boolean);
+
+  return {
+    city: parts[0] || "",
+    state: parts[1] || "",
+    country:
+      parts[2] ||
+      "india",
+    parts
+  };
+};
 
 
 // CREATE JOB
@@ -35,10 +82,19 @@ exports.getJobs = async (req, res, next) => {
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    const preferredLocation =
+      String(
+        req.query.preferredLocation || ""
+      ).trim();
+    const experienceLevel =
+      String(
+        req.query.experienceLevel || ""
+      ).trim();
 
     const skip = (page - 1) * limit;
 
-    const query = {};
+    const query =
+      getVisibleJobQuery();
 
     // filtering by location
     if (req.query.location) {
@@ -55,10 +111,139 @@ exports.getJobs = async (req, res, next) => {
       query.skills = { $in: [req.query.skill] };
     }
 
-    const jobs = await Job.find(query)
-      .sort({ createdAt: -1 }) // newest first
-      .skip(skip)
-      .limit(limit);
+    if (experienceLevel) {
+      query.experienceLevel = experienceLevel;
+    }
+
+    const userId =
+      getUserIdFromRequest(req);
+
+    const user =
+      userId
+        ? await User.findById(userId)
+            .select("preferredLocation")
+        : null;
+
+    const effectivePreferredLocation =
+      preferredLocation ||
+      user?.preferredLocation ||
+      "";
+
+    let jobs;
+
+    if (effectivePreferredLocation) {
+      const locationParts =
+        parseLocationParts(
+          effectivePreferredLocation
+        );
+
+      const cityRegex =
+        locationParts.city
+          ? escapeRegex(locationParts.city)
+          : null;
+
+      const stateRegex =
+        locationParts.state
+          ? escapeRegex(locationParts.state)
+          : null;
+
+      const countryRegex =
+        locationParts.country
+          ? escapeRegex(locationParts.country)
+          : "india";
+
+      jobs = await Job.aggregate([
+        { $match: query },
+        {
+          $addFields: {
+            locationPriority: {
+              $switch: {
+                branches: [
+                  ...(cityRegex
+                    ? [{
+                        case: {
+                          $regexMatch: {
+                            input: {
+                              $ifNull: [
+                                "$location",
+                                ""
+                              ]
+                            },
+                            regex: cityRegex,
+                            options: "i"
+                          }
+                        },
+                        then: 4
+                      }]
+                    : []),
+                  ...(stateRegex
+                    ? [{
+                        case: {
+                          $regexMatch: {
+                            input: {
+                              $ifNull: [
+                                "$location",
+                                ""
+                              ]
+                            },
+                            regex: stateRegex,
+                            options: "i"
+                          }
+                        },
+                        then: 3
+                      }]
+                    : []),
+                  {
+                    case: {
+                      $regexMatch: {
+                        input: {
+                          $ifNull: [
+                            "$location",
+                            ""
+                          ]
+                        },
+                        regex: "remote",
+                        options: "i"
+                      }
+                    },
+                    then: 2
+                  },
+                  {
+                    case: {
+                      $regexMatch: {
+                        input: {
+                          $ifNull: [
+                            "$location",
+                            ""
+                          ]
+                        },
+                        regex: countryRegex,
+                        options: "i"
+                      }
+                    },
+                    then: 1
+                  }
+                ],
+                default: 0
+              }
+            }
+          }
+        },
+        {
+          $sort: {
+            locationPriority: -1,
+            createdAt: -1
+          }
+        },
+        { $skip: skip },
+        { $limit: limit }
+      ]);
+    } else {
+      jobs = await Job.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+    }
 
     const total = await Job.countDocuments(query);
 
@@ -66,6 +251,8 @@ exports.getJobs = async (req, res, next) => {
       page,
       limit,
       total,
+      preferredLocation:
+        effectivePreferredLocation,
       jobs
     });
 
@@ -82,7 +269,10 @@ exports.getJobById = async (req, res, next) => {
 
   try {
 
-    const job = await Job.findById(req.params.id);
+    const job = await Job.findOne({
+      _id: req.params.id,
+      ...getVisibleJobQuery()
+    });
 
     if (!job) {
       return res.status(404).json({
@@ -159,7 +349,8 @@ exports.searchJobs = async (req, res) => {
       limit = 10
     } = req.query;
 
-    const query = {};
+    const query =
+      getVisibleJobQuery();
 
     if (q) {
       query.$text = { $search: q };
@@ -215,6 +406,10 @@ exports.searchJobs = async (req, res) => {
           title: job.title,
           company: job.company,
           location: job.location,
+          applyLink: job.applyLink,
+          applySource: job.applySource,
+          experienceLevel:
+            job.experienceLevel,
           skillsRequired: job.skills || [],
           matched,
           missing,

@@ -6,6 +6,7 @@ const emailJobService =
   require("../services/emailJobService");
 
 const getJobsByType = async (
+  req,
   res,
   type
 ) => {
@@ -13,7 +14,7 @@ const getJobsByType = async (
 
     const jobs =
       await emailJobService.getInboxJobs(
-        "6a0c6446f0dc236879aa07d7",
+        req.user.id,
         { type }
       );
 
@@ -38,6 +39,7 @@ exports.getInterviewJobs = async (
   res
 ) => {
   return getJobsByType(
+    req,
     res,
     "INTERVIEW"
   );
@@ -48,6 +50,7 @@ exports.getApplicationJobs = async (
   res
 ) => {
   return getJobsByType(
+    req,
     res,
     "APPLICATION"
   );
@@ -58,6 +61,7 @@ exports.getOfferJobs = async (
   res
 ) => {
   return getJobsByType(
+    req,
     res,
     "OFFER"
   );
@@ -68,6 +72,7 @@ exports.getRejectionJobs = async (
   res
 ) => {
   return getJobsByType(
+    req,
     res,
     "REJECTION"
   );
@@ -78,7 +83,7 @@ exports.getInboxJobs = async (req, res) => {
 
     const jobs = await EmailJob
       .find({
-        user: "6a0c6446f0dc236879aa07d7"
+        user: req.user.id
       })
       .sort({ createdAt: -1 });
 
@@ -100,7 +105,10 @@ exports.getInboxJobs = async (req, res) => {
 
 exports.connectGmail = async (req, res) => {
   try {
-    const url = gmailService.generateAuthUrl();
+    const url =
+      await gmailService.generateAuthUrl(
+        req.user.id
+      );
 
     res.status(200).json({
       success: true,
@@ -118,29 +126,53 @@ exports.connectGmail = async (req, res) => {
 exports.gmailCallback = async (req, res) => {
   try {
     const { code } = req.query;
+    const clientUrl =
+      process.env.CLIENT_URL ||
+      "http://localhost:5173";
 
     if (!code) {
-      return res.status(400).json({
-        success: false,
-        message: "Authorization code missing"
-      });
+      return res.redirect(
+        `${clientUrl}/inbox?gmail=error&message=${encodeURIComponent(
+          "Authorization code missing"
+        )}`
+      );
     }
 
-    const result = await gmailService.handleCallback(
-      code,
-      "6a0c6446f0dc236879aa07d7"
+    const { state } = req.query;
+
+    if (!state) {
+      return res.redirect(
+        `${clientUrl}/inbox?gmail=error&message=${encodeURIComponent(
+          "User context missing"
+        )}`
+      );
+    }
+
+    const authState =
+      gmailService.getUserIdFromAuthState(
+        state
+      );
+
+    await gmailService.handleCallback(
+        code,
+        authState.id,
+        authState.inboxEmail
+      );
+
+    return res.redirect(
+      `${clientUrl}/inbox?gmail=connected`
     );
 
-    res.status(200).json({
-      success: true,
-      data: result
-    });
-
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
+    const clientUrl =
+      process.env.CLIENT_URL ||
+      "http://localhost:5173";
+
+    return res.redirect(
+      `${clientUrl}/inbox?gmail=error&message=${encodeURIComponent(
+        err.message
+      )}`
+    );
   }
 };
 
@@ -153,7 +185,7 @@ exports.connectionStatus = async (req, res) => {
 
     res.json({
       success: true,
-      connected: status
+      ...status
     });
 
   } catch (err) {
@@ -169,7 +201,7 @@ exports.getEmails = async (req, res) => {
 
     const emails =
       await gmailService.fetchEmails(
-        "6a0c6446f0dc236879aa07d7"
+        req.user.id
       );
 
     res.status(200).json({
@@ -193,7 +225,7 @@ exports.getTrustedJobs = async (req, res) => {
 
     const jobs =
       await emailJobService.getInboxJobs(
-        "6a0c6446f0dc236879aa07d7",
+        req.user.id,
         {
           trust: "🟢 Trusted"
         }
@@ -220,7 +252,7 @@ exports.getReviewJobs = async (req, res) => {
 
     const jobs =
       await emailJobService.getInboxJobs(
-        "6a0c6446f0dc236879aa07d7",
+        req.user.id,
         {
           trust: "🟡 Needs Review"
         }
@@ -247,7 +279,7 @@ exports.getFilteredJobs = async (req, res) => {
 
     const jobs =
       await emailJobService.getInboxJobs(
-        "6a0c6446f0dc236879aa07d7",
+        req.user.id,
         {
           trust: "🔴 Filtered"
         }
@@ -257,6 +289,31 @@ exports.getFilteredJobs = async (req, res) => {
       success: true,
       count: jobs.length,
       jobs
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
+};
+
+exports.getRecruiterInsights = async (req, res) => {
+  try {
+
+    const recruiters =
+      await emailJobService
+        .getRecruiterInsights(
+          req.user.id
+        );
+
+    res.json({
+      success: true,
+      count: recruiters.length,
+      recruiters
     });
 
   } catch (err) {

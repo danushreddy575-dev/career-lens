@@ -1,6 +1,30 @@
 const User = require("../models/User");
 const Job = require("../models/Job");
 const normalizeSkill = require("../utils/normalizeSkill");
+const {
+  getVisibleJobQuery
+} = require("../utils/jobLifecycle");
+
+const emailPattern =
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const normalizeInboxEmail = (email) => {
+  const inboxEmail =
+    String(email || "")
+      .trim()
+      .toLowerCase();
+
+  if (
+    inboxEmail &&
+    !emailPattern.test(inboxEmail)
+  ) {
+    throw new Error(
+      "Invalid inbox email"
+    );
+  }
+
+  return inboxEmail;
+};
 
 // Create user profile
 exports.createUser = async (req, res) => {
@@ -9,6 +33,7 @@ exports.createUser = async (req, res) => {
       name,
       email,
       password,
+      mobileNumber,
       skills,
       preferredLocation,
       preferredJobType
@@ -28,6 +53,8 @@ exports.createUser = async (req, res) => {
       name,
       email,
       password,
+      mobileNumber:
+        String(mobileNumber || "").trim(),
       skills: normalizedSkills,
       preferredLocation,
       preferredJobType
@@ -63,7 +90,10 @@ exports.getUsers = async (req, res) => {
 // Get one user
 exports.getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select("-password");
+    const user =
+      await User.findById(
+        req.user.id
+      ).select("-password");
 
     if (!user) {
       return res.status(404).json({
@@ -86,13 +116,52 @@ exports.getUserById = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const updates = { ...req.body };
+    const existingUser =
+      await User.findById(req.user.id)
+        .select(
+          "inboxEmail gmailConnected gmailConnectedAt"
+        );
+
+    if (!existingUser) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
 
     if (updates.skills) {
       updates.skills = updates.skills.map(normalizeSkill);
     }
 
+    delete updates.gmailConnected;
+    delete updates.gmailConnectedAt;
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        updates,
+        "inboxEmail"
+      )
+    ) {
+      updates.inboxEmail =
+        normalizeInboxEmail(
+          updates.inboxEmail
+        );
+
+      const currentInboxEmail =
+        normalizeInboxEmail(
+          existingUser.inboxEmail
+        );
+
+      if (
+        updates.inboxEmail !==
+        currentInboxEmail
+      ) {
+        updates.gmailConnected = false;
+        updates.gmailConnectedAt = null;
+      }
+    }
+
     const user = await User.findByIdAndUpdate(
-      req.params.id,
+      req.user.id,
       updates,
       {
         new: true,
@@ -111,8 +180,17 @@ exports.updateUser = async (req, res) => {
   } catch (error) {
     console.error("Update user error:", error);
 
-    res.status(500).json({
-      message: "Failed to update user"
+    res.status(
+      error.message ===
+        "Invalid inbox email"
+        ? 400
+        : 500
+    ).json({
+      message:
+        error.message ===
+          "Invalid inbox email"
+          ? error.message
+          : "Failed to update user"
     });
   }
 };
@@ -144,7 +222,8 @@ exports.deleteUser = async (req, res) => {
 // Save a job
 exports.saveJob = async (req, res) => {
   try {
-    const { userId, jobId } = req.params;
+    const { jobId } = req.params;
+    const userId = req.user.id;
 
     const user = await User.findById(userId);
 
@@ -154,11 +233,14 @@ exports.saveJob = async (req, res) => {
       });
     }
 
-    const job = await Job.findById(jobId);
+    const job = await Job.findOne({
+      _id: jobId,
+      ...getVisibleJobQuery()
+    });
 
     if (!job) {
       return res.status(404).json({
-        message: "Job not found"
+        message: "Job not found or no longer active"
       });
     }
 
@@ -199,10 +281,13 @@ exports.saveJob = async (req, res) => {
 // Get saved jobs
 exports.getSavedJobs = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = req.user.id;
 
     const user = await User.findById(userId)
-      .populate("savedJobs");
+      .populate({
+        path: "savedJobs",
+        match: getVisibleJobQuery()
+      });
 
     if (!user) {
       return res.status(404).json({
@@ -211,8 +296,10 @@ exports.getSavedJobs = async (req, res) => {
     }
 
     res.json({
-      total: user.savedJobs.length,
-      savedJobs: user.savedJobs
+      total:
+        user.savedJobs.filter(Boolean).length,
+      savedJobs:
+        user.savedJobs.filter(Boolean)
     });
 
   } catch (error) {
@@ -227,7 +314,8 @@ exports.getSavedJobs = async (req, res) => {
 // Remove saved job
 exports.removeSavedJob = async (req, res) => {
   try {
-    const { userId, jobId } = req.params;
+    const { jobId } = req.params;
+    const userId = req.user.id;
 
     const user = await User.findById(userId);
 

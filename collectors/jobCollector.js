@@ -7,6 +7,9 @@ const fetchJobs = require("./services/fetchJobs");
 const isSimilar = require("../utils/similarity");
 const extractSkills = require("../utils/skillExtractor");
 const normalizeSkill = require("../utils/normalizeSkill");
+const {
+  markStaleMarketJobsInactive
+} = require("../utils/jobLifecycle");
 
 const collectJobs = async () => {
 
@@ -17,6 +20,8 @@ const collectJobs = async () => {
     console.log("Starting job collection...");
 
     const jobs = await fetchJobs();
+    const collectionStartedAt =
+      new Date();
 
     let savedCount = 0;
     let skippedCount = 0;
@@ -54,7 +59,11 @@ const collectJobs = async () => {
         location: "Remote",
         description: item.body,
         skills: extractedSkills.map(normalizeSkill),
-        source: "collector"
+        source: "collector",
+        lastSeenAt:
+          collectionStartedAt,
+        isActive: true,
+        inactiveAt: null
       });
 
       await job.save();
@@ -64,6 +73,15 @@ const collectJobs = async () => {
     console.log("\n✅ Job collection completed");
     console.log(`Saved: ${savedCount}`);
     console.log(`Skipped (duplicates): ${skippedCount}`);
+
+    const deactivatedStaleJobs =
+      await markStaleMarketJobsInactive(
+        Job
+      );
+
+    console.log(
+      `Marked inactive: ${deactivatedStaleJobs}`
+    );
 
     process.exit();
 

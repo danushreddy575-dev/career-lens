@@ -7,6 +7,7 @@ const applicationService =
 
 const getByStatus =
   async (
+    req,
     res,
     status
   ) => {
@@ -16,7 +17,7 @@ const getByStatus =
       const applications =
         await applicationService
           .getApplicationsByStatus(
-            "6a0c6446f0dc236879aa07d7",
+            req.user.id,
             status
           );
 
@@ -46,7 +47,9 @@ exports.getApplications =
     try {
 
       const applications =
-        await Application.find()
+        await Application.find({
+          user: req.user.id
+        })
         .sort({ createdAt: -1 });
 
       res.json({
@@ -70,6 +73,7 @@ exports.getAppliedApplications =
   async (req, res) => {
 
     return getByStatus(
+      req,
       res,
       "APPLIED"
     );
@@ -80,6 +84,7 @@ exports.getInterviewApplications =
   async (req, res) => {
 
     return getByStatus(
+      req,
       res,
       "INTERVIEW"
     );
@@ -90,6 +95,7 @@ exports.getAcceptedApplications =
   async (req, res) => {
 
     return getByStatus(
+      req,
       res,
       "ACCEPTED"
     );
@@ -100,6 +106,7 @@ exports.getRejectedApplications =
   async (req, res) => {
 
     return getByStatus(
+      req,
       res,
       "REJECTED"
     );

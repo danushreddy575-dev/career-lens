@@ -10,6 +10,7 @@ exports.register = async (req, res) => {
       name,
       email,
       password,
+      mobileNumber,
       skills,   
       preferredLocation,
       preferredJobType
@@ -47,6 +48,9 @@ exports.register = async (req, res) => {
 
         password:
           hashedPassword,
+
+        mobileNumber:
+          String(mobileNumber || "").trim(),
 
         skills:
           normalizedSkills,

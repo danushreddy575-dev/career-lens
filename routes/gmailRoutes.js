@@ -15,7 +15,8 @@ const {
   getInterviewJobs,
   getApplicationJobs,
   getOfferJobs,
-  getRejectionJobs
+  getRejectionJobs,
+  getRecruiterInsights
 } = require("../controllers/gmailController");
 
 router.get(
@@ -37,47 +38,62 @@ router.get(
 
 router.get(
   "/emails",
+  auth,
   getEmails
 );
 
 router.get(
   "/inbox",
+  auth,
   getInboxJobs
 );
 
 router.get(
   "/inbox/trusted",
+  auth,
   getTrustedJobs
 );
 
 router.get(
   "/inbox/review",
+  auth,
   getReviewJobs
 );
 
 router.get(
   "/inbox/filtered",
+  auth,
   getFilteredJobs
 );
 
 router.get(
   "/inbox/interviews",
+  auth,
   getInterviewJobs
 );
 
 router.get(
   "/inbox/applications",
+  auth,
   getApplicationJobs
 );
 
 router.get(
   "/inbox/offers",
+  auth,
   getOfferJobs
 );
 
 router.get(
   "/inbox/rejections",
+  auth,
   getRejectionJobs
+);
+
+router.get(
+  "/recruiters",
+  auth,
+  getRecruiterInsights
 );
 
 module.exports = router;

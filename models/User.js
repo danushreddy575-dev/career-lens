@@ -21,6 +21,12 @@ const userSchema = new mongoose.Schema(
       required: true
     },
 
+    mobileNumber: {
+      type: String,
+      default: "",
+      trim: true
+    },
+
     skills: {
       type: [String],
       default: []
@@ -36,6 +42,24 @@ const userSchema = new mongoose.Schema(
       enum: ["Internship", "Full Time", "Part Time", "Remote"],
       default: "Full Time"
     },
+
+    inboxEmail: {
+      type: String,
+      default: "",
+      lowercase: true,
+      trim: true
+    },
+
+    gmailConnected: {
+      type: Boolean,
+      default: false
+    },
+
+    gmailConnectedAt: {
+      type: Date,
+      default: null
+    },
+
     savedJobs: [
   {
     type: mongoose.Schema.Types.ObjectId,

@@ -42,7 +42,32 @@ const applicationSchema = new mongoose.Schema(
     notes: {
       type: String,
       default: ""
-    }
+    },
+
+    timeline: [
+      {
+        event: {
+          type: String,
+          enum: [
+            "Applied",
+            "Assessment",
+            "Interview",
+            "Offer",
+            "Rejected"
+          ]
+        },
+        source: {
+          type: String,
+          default: "EMAIL"
+        },
+        emailId: String,
+        subject: String,
+        occurredAt: {
+          type: Date,
+          default: Date.now
+        }
+      }
+    ]
   },
   {
     timestamps: true

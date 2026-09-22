@@ -18,9 +18,21 @@ const {
 router.post("/", createUser);
 router.get("/",auth,getUsers);
 
-router.post("/:userId/save-job/:jobId", saveJob);
-router.get("/:userId/saved-jobs", getSavedJobs);
-router.delete("/:userId/save-job/:jobId", removeSavedJob);
+router.post(
+  "/:userId/save-job/:jobId",
+  auth,
+  saveJob
+);
+router.get(
+  "/:userId/saved-jobs",
+  auth,
+  getSavedJobs
+);
+router.delete(
+  "/:userId/save-job/:jobId",
+  auth,
+  removeSavedJob
+);
 
 router.get("/:id",auth,getUserById);
 router.put("/:id",auth,updateUser);

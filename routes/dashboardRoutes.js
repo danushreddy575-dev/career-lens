@@ -2,6 +2,9 @@ const express = require("express");
 
 const router = express.Router();
 
+const auth =
+  require("../middleware/authMiddleware");
+
 const {
   getDashboardSummary
 } = require(
@@ -10,6 +13,7 @@ const {
 
 router.get(
   "/summary",
+  auth,
   getDashboardSummary
 );
 

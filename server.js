@@ -55,7 +55,6 @@ app.use(
 // GLOBAL ERROR HANDLER
 app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
-console.log("CLIENT ID:", process.env.GMAIL_CLIENT_ID);
 app.listen(PORT, () => {
 console.log(`Server running on port ${PORT}`);
 });

@@ -12,7 +12,47 @@ const {
   "../services/gmailSyncService"
 );
 
+const runJobCollection = async () => {
+  console.log(
+    "Running collector..."
+  );
+
+  const total =
+    await collectLiveJobs();
+
+  await CollectorLog.create({
+
+    status:
+      "SUCCESS",
+
+    time:
+      new Date(),
+
+    message:
+      `Collected ${total} jobs`
+
+  });
+
+  console.log(
+    `${total} jobs synced`
+  );
+};
+
 function startScheduler() {
+
+  setTimeout(
+    async () => {
+      try {
+        await runJobCollection();
+      } catch (err) {
+        console.log(
+          "Startup collector failed:",
+          err.message
+        );
+      }
+    },
+    5000
+  );
 
   cron.schedule(
 
@@ -21,30 +61,7 @@ function startScheduler() {
     async () => {
 
       try {
-
-        console.log(
-          "Running collector..."
-        );
-
-        const total =
-          await collectLiveJobs();
-
-        await CollectorLog.create({
-
-          status:
-            "SUCCESS",
-
-          time:
-            new Date(),
-
-          message:
-            `Collected ${total} jobs`
-
-        });
-
-        console.log(
-          `${total} jobs synced`
-        );
+        await runJobCollection();
 
       }
 

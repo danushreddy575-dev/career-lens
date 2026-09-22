@@ -30,15 +30,80 @@ const TRACKING_PARAM_KEYS = [
   "redirect",
   "redirect_url",
   "redirectUrl",
+  "redirect_uri",
+  "redirectUri",
   "url",
+  "q",
   "u",
+  "link",
+  "to",
+  "r",
   "target",
+  "target_url",
+  "targetUrl",
   "destination"
 ];
 
+const BLOCKED_LINK_KEYWORDS = [
+  "unsubscribe",
+  "privacy",
+  "terms",
+  "preferences",
+  "manage-email",
+  "email-preference",
+  "view-in-browser",
+  "webversion"
+];
+
+const trimUrlJunk = (value = "") => {
+  let cleaned =
+    decodeHtmlEntities(value)
+      .trim()
+      .replace(/\\+$/g, "");
+
+  while (
+    cleaned &&
+    /[)\].,;!?]+$/.test(cleaned)
+  ) {
+    cleaned = cleaned.slice(0, -1);
+  }
+
+  return cleaned;
+};
+
+const isValidHttpUrl = (value = "") => {
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"]
+      .includes(url.protocol);
+  } catch (err) {
+    return false;
+  }
+};
+
+const isBlockedUtilityLink = (value = "") => {
+  const lowerValue =
+    value.toLowerCase();
+
+  return BLOCKED_LINK_KEYWORDS
+    .some(keyword =>
+      lowerValue.includes(keyword)
+    );
+};
+
 const extractOpportunityLink = (text = "") => {
   const urls = [
-    ...new Set(text.match(URL_REGEX) || [])
+    ...new Set(
+      (text.match(URL_REGEX) || [])
+        .map(url =>
+          extractTrackingDestination(url)
+        )
+        .map(trimUrlJunk)
+        .filter(isValidHttpUrl)
+        .filter(url =>
+          !isBlockedUtilityLink(url)
+        )
+    )
   ];
 
   if (!urls.length) return "";
@@ -91,7 +156,9 @@ const decodeRepeatedly = (value = "") => {
 
 const extractTrackingDestination = (href = "") => {
   const decodedHref =
-    decodeRepeatedly(href);
+    trimUrlJunk(
+      decodeRepeatedly(href)
+    );
 
   try {
     const url = new URL(decodedHref);
@@ -104,7 +171,9 @@ const extractTrackingDestination = (href = "") => {
         value &&
         /^https?:\/\//i.test(value)
       ) {
-        return decodeRepeatedly(value);
+        return trimUrlJunk(
+          decodeRepeatedly(value)
+        );
       }
     }
   } catch (err) {
@@ -117,10 +186,23 @@ const extractTrackingDestination = (href = "") => {
     );
 
   if (cl0Match) {
-    return cl0Match[1];
+    return extractTrackingDestination(
+      trimUrlJunk(cl0Match[1])
+    );
   }
 
-  return decodedHref;
+  const trackingPathMatch =
+    decodedHref.match(
+      /\/[A-Z0-9]{1,4}\/(https?:\/\/.+)$/i
+    );
+
+  if (trackingPathMatch) {
+    return extractTrackingDestination(
+      trimUrlJunk(trackingPathMatch[1])
+    );
+  }
+
+  return trimUrlJunk(decodedHref);
 };
 
 const getAnchorLinks = (html = "") => {
@@ -143,7 +225,8 @@ const getAnchorLinks = (html = "") => {
       };
     })
     .filter(anchor =>
-      /^https?:\/\//i.test(anchor.href)
+      isValidHttpUrl(anchor.href) &&
+      !isBlockedUtilityLink(anchor.href)
     );
 };
 
