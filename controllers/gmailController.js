@@ -159,6 +159,17 @@ exports.gmailCallback = async (req, res) => {
         authState.inboxEmail
       );
 
+    try {
+      await gmailService.fetchEmails(
+        authState.id
+      );
+    } catch (syncErr) {
+      console.error(
+        "Gmail post-connect sync failed:",
+        syncErr.message
+      );
+    }
+
     return res.redirect(
       `${clientUrl}/inbox?gmail=connected`
     );
